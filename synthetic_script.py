@@ -57,10 +57,10 @@ if st.button("🔥 Generate AI Script", type="primary"):
     if not hf_token:
         st.error("Please enter your Hugging Face Token in the sidebar first!")
     elif product_name and target_audience:
-        with st.spinner("Llama Engine is crafting your customized script..."):
+        with st.spinner("AI Engine is crafting your customized script..."):
             try:
-                # FIX: Specifying the exact model AND provider avoids the auto-router crash completely
-                client = InferenceClient(token=hf_token)
+                # FIXED: Initializing client directly with the stable Qwen model to bypass the auto-router entirely
+                client = InferenceClient(model="Qwen/Qwen2.5-72B-Instruct", token=hf_token)
 
                 prompt = f"""
                 You are an expert multimedia marketing copywriter who writes high-converting video scripts.
@@ -85,12 +85,7 @@ if st.button("🔥 Generate AI Script", type="primary"):
                     {"role": "user", "content": prompt}
                 ]
 
-                # Using chat_completion with targeted @groq provider to match 'conversational' task requirement
-                response = client.chat_completion(
-                    messages=messages,
-                    model="meta-llama/Llama-3.3-70B-Instruct@groq",
-                    max_tokens=500
-                )
+                response = client.chat_completion(messages=messages, max_tokens=500)
                 st.session_state.generated_script = response.choices[0].message.content
                 st.success("Script generated successfully!")
 
@@ -110,7 +105,8 @@ if st.session_state.generated_script:
     if st.button("🎬 Generate Visual Storyboard"):
         with st.spinner("Analyzing script to design visual scenes & image prompts..."):
             try:
-                client = InferenceClient(token=hf_token)
+                # FIXED: Applied the same stable model setup here
+                client = InferenceClient(model="Qwen/Qwen2.5-72B-Instruct", token=hf_token)
 
                 storyboard_prompt = f"""
                 You are an expert Art Director. Analyze this script and create a structured storyboard.
@@ -129,11 +125,7 @@ if st.session_state.generated_script:
                     {"role": "user", "content": storyboard_prompt}
                 ]
 
-                response = client.chat_completion(
-                    messages=messages,
-                    model="meta-llama/Llama-3.3-70B-Instruct@groq",
-                    max_tokens=800
-                )
+                response = client.chat_completion(messages=messages, max_tokens=800)
                 st.session_state.generated_storyboard = response.choices[0].message.content
 
                 lines = st.session_state.generated_storyboard.split('\n')
@@ -168,11 +160,8 @@ if st.session_state.generated_storyboard:
         if st.button("🎨 Render Scene Image"):
             with st.spinner("Drawing your scene using FLUX..."):
                 try:
-                    img_client = InferenceClient(token=hf_token)
-                    image = img_client.text_to_image(
-                        custom_img_prompt,
-                        model="black-forest-labs/FLUX.1-schnell"
-                    )
+                    img_client = InferenceClient(model="black-forest-labs/FLUX.1-schnell", token=hf_token)
+                    image = img_client.text_to_image(custom_img_prompt)
                     st.image(image, caption="AI Generated Scene Visual", use_container_width=True)
 
                     buf = io.BytesIO()
