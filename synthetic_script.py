@@ -59,11 +59,11 @@ if st.button("🔥 Generate AI Script", type="primary"):
     elif product_name and target_audience:
         with st.spinner("Llama Engine is crafting your customized script..."):
             try:
-                # Direct client initialization with explicit endpoints to bypass auto-router logic
+                # FIX: Specifying the exact model AND provider avoids the auto-router crash completely
                 client = InferenceClient(token=hf_token)
 
-                prompt = f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-                You are a professional copywriter. Write the output in: {language} and tone: {tone}.<|eot_id|><|start_header_id|>user<|end_header_id|>
+                prompt = f"""
+                You are an expert multimedia marketing copywriter who writes high-converting video scripts.
                 Create a professional short-form video script (under 60 seconds) using the AIDA framework.
 
                 Product/Service: {product_name}
@@ -78,15 +78,20 @@ if st.button("🔥 Generate AI Script", type="primary"):
                 2. [INTEREST - Problem setup]
                 3. [DESIRE - The solution and value proposition]
                 4. [CALL TO ACTION - High converting ending]
-                <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+                """
 
-                # Using text_generation explicitly targets the model without routing conflicts
-                response = client.text_generation(
-                    prompt,
-                    model="meta-llama/Llama-3.3-70B-Instruct",
-                    max_new_tokens=500
+                messages = [
+                    {"role": "system", "content": f"You are a professional copywriter. Write the output in: {language} and tone: {tone}."},
+                    {"role": "user", "content": prompt}
+                ]
+
+                # Using chat_completion with targeted @groq provider to match 'conversational' task requirement
+                response = client.chat_completion(
+                    messages=messages,
+                    model="meta-llama/Llama-3.3-70B-Instruct@groq",
+                    max_tokens=500
                 )
-                st.session_state.generated_script = response
+                st.session_state.generated_script = response.choices[0].message.content
                 st.success("Script generated successfully!")
 
             except Exception as e:
@@ -107,8 +112,7 @@ if st.session_state.generated_script:
             try:
                 client = InferenceClient(token=hf_token)
 
-                storyboard_prompt = f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-                You are a professional video producer. Create a structured storyboard.<|eot_id|><|start_header_id|>user<|end_header_id|>
+                storyboard_prompt = f"""
                 You are an expert Art Director. Analyze this script and create a structured storyboard.
                 Provide:
                 1. **Visual Description**
@@ -118,14 +122,19 @@ if st.session_state.generated_script:
 
                 Script:
                 {st.session_state.generated_script}
-                <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+                """
 
-                response = client.text_generation(
-                    storyboard_prompt,
-                    model="meta-llama/Llama-3.3-70B-Instruct",
-                    max_new_tokens=800
+                messages = [
+                    {"role": "system", "content": "You are a professional video producer. Create a structured storyboard."},
+                    {"role": "user", "content": storyboard_prompt}
+                ]
+
+                response = client.chat_completion(
+                    messages=messages,
+                    model="meta-llama/Llama-3.3-70B-Instruct@groq",
+                    max_tokens=800
                 )
-                st.session_state.generated_storyboard = response
+                st.session_state.generated_storyboard = response.choices[0].message.content
 
                 lines = st.session_state.generated_storyboard.split('\n')
                 for line in lines:
