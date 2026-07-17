@@ -59,11 +59,11 @@ if st.button("🔥 Generate AI Script", type="primary"):
     elif product_name and target_audience:
         with st.spinner("Llama Engine is crafting your customized script..."):
             try:
-                # Explicitly passing the model into the client initialization to fix auto-router issue
-                client = InferenceClient(model="meta-llama/Llama-3.3-70B-Instruct", token=hf_token)
+                # Direct client initialization with explicit endpoints to bypass auto-router logic
+                client = InferenceClient(token=hf_token)
 
-                prompt = f"""
-                You are an expert multimedia marketing copywriter who writes high-converting video scripts.
+                prompt = f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+                You are a professional copywriter. Write the output in: {language} and tone: {tone}.<|eot_id|><|start_header_id|>user<|end_header_id|>
                 Create a professional short-form video script (under 60 seconds) using the AIDA framework.
 
                 Product/Service: {product_name}
@@ -78,16 +78,15 @@ if st.button("🔥 Generate AI Script", type="primary"):
                 2. [INTEREST - Problem setup]
                 3. [DESIRE - The solution and value proposition]
                 4. [CALL TO ACTION - High converting ending]
-                """
+                <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
-                messages = [
-                    {"role": "system",
-                     "content": f"You are a professional copywriter. Write the output in: {language} and tone: {tone}."},
-                    {"role": "user", "content": prompt}
-                ]
-
-                response = client.chat_completion(messages=messages, max_tokens=500)
-                st.session_state.generated_script = response.choices[0].message.content
+                # Using text_generation explicitly targets the model without routing conflicts
+                response = client.text_generation(
+                    prompt,
+                    model="meta-llama/Llama-3.3-70B-Instruct",
+                    max_new_tokens=500
+                )
+                st.session_state.generated_script = response
                 st.success("Script generated successfully!")
 
             except Exception as e:
@@ -106,10 +105,10 @@ if st.session_state.generated_script:
     if st.button("🎬 Generate Visual Storyboard"):
         with st.spinner("Analyzing script to design visual scenes & image prompts..."):
             try:
-                # Explicitly passing the model here as well
-                client = InferenceClient(model="meta-llama/Llama-3.3-70B-Instruct", token=hf_token)
+                client = InferenceClient(token=hf_token)
 
-                storyboard_prompt = f"""
+                storyboard_prompt = f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+                You are a professional video producer. Create a structured storyboard.<|eot_id|><|start_header_id|>user<|end_header_id|>
                 You are an expert Art Director. Analyze this script and create a structured storyboard.
                 Provide:
                 1. **Visual Description**
@@ -119,16 +118,14 @@ if st.session_state.generated_script:
 
                 Script:
                 {st.session_state.generated_script}
-                """
+                <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
-                messages = [
-                    {"role": "system",
-                     "content": "You are a professional video producer. Create a structured storyboard."},
-                    {"role": "user", "content": storyboard_prompt}
-                ]
-
-                response = client.chat_completion(messages=messages, max_tokens=800)
-                st.session_state.generated_storyboard = response.choices[0].message.content
+                response = client.text_generation(
+                    storyboard_prompt,
+                    model="meta-llama/Llama-3.3-70B-Instruct",
+                    max_new_tokens=800
+                )
+                st.session_state.generated_storyboard = response
 
                 lines = st.session_state.generated_storyboard.split('\n')
                 for line in lines:
@@ -162,9 +159,11 @@ if st.session_state.generated_storyboard:
         if st.button("🎨 Render Scene Image"):
             with st.spinner("Drawing your scene using FLUX..."):
                 try:
-                    # FIX: Initializing with the specific FLUX model explicitly to prevent auto-router crashes
-                    img_client = InferenceClient(model="black-forest-labs/FLUX.1-schnell", token=hf_token)
-                    image = img_client.text_to_image(custom_img_prompt)
+                    img_client = InferenceClient(token=hf_token)
+                    image = img_client.text_to_image(
+                        custom_img_prompt,
+                        model="black-forest-labs/FLUX.1-schnell"
+                    )
                     st.image(image, caption="AI Generated Scene Visual", use_container_width=True)
 
                     buf = io.BytesIO()
