@@ -59,6 +59,7 @@ if st.button("🔥 Generate AI Script", type="primary"):
     elif product_name and target_audience:
         with st.spinner("Llama Engine is crafting your customized script..."):
             try:
+                # Explicitly passing the model into the client initialization to fix auto-router issue
                 client = InferenceClient(model="meta-llama/Llama-3.3-70B-Instruct", token=hf_token)
 
                 prompt = f"""
@@ -105,6 +106,7 @@ if st.session_state.generated_script:
     if st.button("🎬 Generate Visual Storyboard"):
         with st.spinner("Analyzing script to design visual scenes & image prompts..."):
             try:
+                # Explicitly passing the model here as well
                 client = InferenceClient(model="meta-llama/Llama-3.3-70B-Instruct", token=hf_token)
 
                 storyboard_prompt = f"""
@@ -160,11 +162,9 @@ if st.session_state.generated_storyboard:
         if st.button("🎨 Render Scene Image"):
             with st.spinner("Drawing your scene using FLUX..."):
                 try:
-                    img_client = InferenceClient(token=hf_token)
-                    image = img_client.text_to_image(
-                        custom_img_prompt,
-                        model="black-forest-labs/FLUX.1-schnell"
-                    )
+                    # FIX: Initializing with the specific FLUX model explicitly to prevent auto-router crashes
+                    img_client = InferenceClient(model="black-forest-labs/FLUX.1-schnell", token=hf_token)
+                    image = img_client.text_to_image(custom_img_prompt)
                     st.image(image, caption="AI Generated Scene Visual", use_container_width=True)
 
                     buf = io.BytesIO()
