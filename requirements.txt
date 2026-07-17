@@ -1,0 +1,5 @@
+streamlit
+huggingface_hub
+Pillow
+gTTS
+click>=8.4.2,<9.0.0
